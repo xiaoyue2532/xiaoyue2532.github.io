@@ -23,19 +23,15 @@ LLVM 是一套天生的交叉编译器。参考[LLVM cross-compiled Linux From S
 参照[Rust Platform Support](https://doc.rust-lang.org/nightly/rustc/platform-support.html), 
 本文选择`unknown`作为厂商名，对于不同的平台三元组，有：
 
-|          四元组名称          |       musl 动态连接器        |
-| :--------------------------: | :--------------------------: |
-|  arm-unknown-linux-musleabi  |    /lib/ld-musl-arm.so.1     |
-| arm-unknown-linux-musleabihf |   /lib/ld-musl-armhf.so.1    |
-|  aarch64-unknown-linux-musl  |  /lib/ld-musl-aarch64.so.1   |
-|  x86_64-unknown-linux-musl   |   /lib/ld-musl-x86_64.so.1   |
-|   i386-unknown-linux-musl    |    /lib/ld-musl-i386.so.1    |
-|   riscv64-lp64-linux-musl    |  /lib/ld-musl-riscv64-sf.so.1   |
-|   riscv64-lp64f-linux-musl   |  /lib/ld-musl-riscv64-sp.so.1   |
-|  riscv64-unknown-linux-musl  |  /lib/ld-musl-riscv64.so.1   |
-|   riscv32-ilp32-linux-musl   | /lib/ld-musl-riscv32-sf.so.1 |
-|  riscv32-ilp32f-linux-musl   | /lib/ld-musl-riscv32-sp.so.1 |
-|  riscv32-unknown-linux-musl  |  /lib/ld-musl-riscv32.so.1   |
+|          四元组名称          |      musl 动态连接器      |
+| :--------------------------: | :-----------------------: |
+|  arm-unknown-linux-musleabi  |   /lib/ld-musl-arm.so.1   |
+| arm-unknown-linux-musleabihf |  /lib/ld-musl-armhf.so.1  |
+|  aarch64-unknown-linux-musl  | /lib/ld-musl-aarch64.so.1 |
+|  x86_64-unknown-linux-musl   | /lib/ld-musl-x86_64.so.1  |
+|   i386-unknown-linux-musl    |  /lib/ld-musl-i386.so.1   |
+|  riscv64-unknown-linux-musl  | /lib/ld-musl-riscv64.so.1 |
+|  riscv32-unknown-linux-musl  | /lib/ld-musl-riscv32.so.1 |
 
 若选择三元组`armv8-unknown-linux-musl`，compiler-rt的文件名就是`libclang_rt.builtins-armv8.a.`。事实上，很多 configure 脚本不认识 `armv8-unknown-linux-musl`,`armv7-unknown-linux-musl`，只认可元组`arm-unknown-linux-musleabi`、`aarch64-unknown-linux-musl`。若想指定架构，使用参数`-march=armv7-a`、`-march=armv8-a`。
 
@@ -43,7 +39,17 @@ LLVM 是一套天生的交叉编译器。参考[LLVM cross-compiled Linux From S
 
 `arm-unknown-linux-musleabi` 默认采用软浮点，在clang cc1 参数中有 `-mfloat-abi=soft`。而`arm-unknown-linux-musleabihf`采用硬浮点，在clang cc1参数中有`-mfloat-abi=hard`。
 
-`riscv64-unknown-linux-musl` 默认`-mabi=lp64d`,`riscv32-unknown-linux-musl`默认`-mabi=ilp32d`
+`riscv64-unknown-linux-musl` 默认`-mabi=lp64d`,`riscv32-unknown-linux-musl`默认`-mabi=ilp32d`，
+于是本文自定义了vendor为lp64、lp64f、lp64d的riscv64目标，vendor为ilp32、ilp32f、ilp32d的riscv32目标
+
+|        四元组名称         |     ABI      |       musl 动态连接器        |
+| :-----------------------: | :----------: | :--------------------------: |
+|  riscv64-lp64-linux-musl  |  -mabi=lp64  | /lib/ld-musl-riscv64-sf.so.1 |
+| riscv64-lp64f-linux-musl  | -mabi=lp64f  | /lib/ld-musl-riscv64-sp.so.1 |
+| riscv64-lp64d-linux-musl  |    (none)    |  /lib/ld-musl-riscv64.so.1   |
+| riscv32-ilp32-linux-musl  | -mabi=ilp32  | /lib/ld-musl-riscv32-sf.so.1 |
+| riscv32-ilp32f-linux-musl | -mabi=ilp32f | /lib/ld-musl-riscv32-sp.so.1 |
+| riscv32-ilp32d-linux-musl |    (none)    |  /lib/ld-musl-riscv32.so.1   |
 
 ## 建立工具链文件布局
 
