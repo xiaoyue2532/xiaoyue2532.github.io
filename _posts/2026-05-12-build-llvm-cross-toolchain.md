@@ -23,21 +23,27 @@ LLVM 是一套天生的交叉编译器。参考[LLVM cross-compiled Linux From S
 参照[Rust Platform Support](https://doc.rust-lang.org/nightly/rustc/platform-support.html), 
 本文选择`unknown`作为厂商名，对于不同的平台三元组，有：
 
-|          三元组名称          |      musl 动态连接器      |        compiler-rt 名称        |
-| :--------------------------: | :-----------------------: | :----------------------------: |
-|  arm-unknown-linux-musleabi  |   /lib/ld-musl-arm.so.1   |   libclang_rt.builtins-arm.a   |
-| arm-unknown-linux-musleabihf |  /lib/ld-musl-armhf.so.1  |  libclang_rt.builtins-armhf.a  |
-|  aarch64-unknown-linux-musl  | /lib/ld-musl-aarch64.so.1 | libclang_rt.builtins-aarch64.a |
-|  x86_64-unknown-linux-musl   | /lib/ld-musl-x86_64.so.1  | libclang_rt.builtins-x86_64.a  |
-|   i386-unknown-linux-musl    |  /lib/ld-musl-i386.so.1   |  libclang_rt.builtins-i386.a   |
-|  riscv64-unknown-linux-musl  | /lib/ld-musl-riscv64.so.1 | libclang_rt.builtins-riscv64.a |
-|  riscv32-unknown-linux-musl  | /lib/ld-musl-riscv32.so.1 | libclang_rt.builtins-riscv32.a |
+|          四元组名称          |       musl 动态连接器        |
+| :--------------------------: | :--------------------------: |
+|  arm-unknown-linux-musleabi  |    /lib/ld-musl-arm.so.1     |
+| arm-unknown-linux-musleabihf |   /lib/ld-musl-armhf.so.1    |
+|  aarch64-unknown-linux-musl  |  /lib/ld-musl-aarch64.so.1   |
+|  x86_64-unknown-linux-musl   |   /lib/ld-musl-x86_64.so.1   |
+|   i386-unknown-linux-musl    |    /lib/ld-musl-i386.so.1    |
+|   riscv64-lp64-linux-musl    |  /lib/ld-musl-riscv64-sf.so.1   |
+|   riscv64-lp64f-linux-musl   |  /lib/ld-musl-riscv64-sp.so.1   |
+|  riscv64-unknown-linux-musl  |  /lib/ld-musl-riscv64.so.1   |
+|   riscv32-ilp32-linux-musl   | /lib/ld-musl-riscv32-sf.so.1 |
+|  riscv32-ilp32f-linux-musl   | /lib/ld-musl-riscv32-sp.so.1 |
+|  riscv32-unknown-linux-musl  |  /lib/ld-musl-riscv32.so.1   |
 
 若选择三元组`armv8-unknown-linux-musl`，compiler-rt的文件名就是`libclang_rt.builtins-armv8.a.`。事实上，很多 configure 脚本不认识 `armv8-unknown-linux-musl`,`armv7-unknown-linux-musl`，只认可元组`arm-unknown-linux-musleabi`、`aarch64-unknown-linux-musl`。若想指定架构，使用参数`-march=armv7-a`、`-march=armv8-a`。
 
 若选择三元组`i686-unknown-linux-musl`，compiler-rt的文件名却仍然是`libclang_rt.builtins-i386.a.`, musl libc加载器的名称也仍然是`/lib/ld-musl-i386.so.1`。类似的用`-march=i686 -mtune=i686`来指定子架构。
 
 `arm-unknown-linux-musleabi` 默认采用软浮点，在clang cc1 参数中有 `-mfloat-abi=soft`。而`arm-unknown-linux-musleabihf`采用硬浮点，在clang cc1参数中有`-mfloat-abi=hard`。
+
+`riscv64-unknown-linux-musl` 默认`-mabi=lp64d`,`riscv32-unknown-linux-musl`默认`-mabi=ilp32d`
 
 ## 建立工具链文件布局
 
@@ -68,7 +74,7 @@ ln -sf llvm-objcopy /llvmtools/bin/aarch64-unknown-linux-musl-objcopy
 ln -sf llvm-objdump /llvmtools/bin/aarch64-unknown-linux-musl-objdump
 ln -sf llvm-readobj /llvmtools/bin/aarch64-unknown-linux-musl-readelf
 ln -sf llvm-size /llvmtools/bin/aarch64-unknown-linux-musl-size
-ln -s llvm-strings /llvmtools/bin/aarch64-unknown-linux-musl-strings
+ln -sf llvm-strings /llvmtools/bin/aarch64-unknown-linux-musl-strings
 ln -sf llvm-objcopy /llvmtools/bin/aarch64-unknown-linux-musl-strip
 
 # 创建 Sysroot 目录
@@ -134,6 +140,7 @@ cmake \
     -DCOMPILER_RT_BUILD_PROFILE=OFF \
     -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
     -DCOMPILER_RT_BUILD_XRAY=OFF \
+    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON \
     ../compiler-rt
 
 ninja && ninja install/strip
@@ -174,7 +181,7 @@ ninja && ninja install/strip
 
 ```shell
 CC=aarch64-unknown-linux-musl-clang \
-LIBCC=/llvmtools/lib/clang/20/lib/linux/libclang_rt.builtins-aarch64.a \
+LIBCC=/llvmtools/lib/clang/20/lib/aarch64-unknown-linux-musl/libclang_rt.builtins.a \
 ./configure \
     --prefix=/ \
     --build=x86_64-pc-linux-gnu \
@@ -229,6 +236,7 @@ cmake \
     -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
     -DLIBCXX_USE_COMPILER_RT=ON \
     -DLIBCXX_HAS_MUSL_LIBC=ON \
+    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON \
     -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind;compiler-rt" \
     ../runtimes
 

@@ -1,7 +1,7 @@
 ---
 title: 搭建面向 arm 的 LLVM 工具链
 date: 2026-03-24 16:16:00 +0800
-categories: [ LLVM, 交叉工具链 ]
+categories: [ LLVM ]
 ---
 
 LLVM 是一套天生的交叉编译器。参考[LLVM cross-compiled Linux From Scratch: C & C++ libraries](https://12101111.github.io/llvm-cross-compile/)，本文以 arm-unknown-linux-musleabihf 为例，搭建了一套 LLVM 交叉编译工具链，即：
