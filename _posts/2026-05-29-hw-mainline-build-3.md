@@ -94,8 +94,14 @@ DTC_FLAGS_sm8250-huawei-dby-w09 += -@
 ### 重新组装
 
 ```shell
-cp $KERNEL_OUT/arch/arm64/boot/dts/qcom/sm8250-huawei-dby-w09.dtb dtb
+export WKDIR_BOOT=/home/arch/wkdir/boot
+cd $WKDIR_BOOT
+
+export KERNEL_SRCTREE=/home/arch/sources/linux-6.6
+cp $KERNEL_SRCTREE/arch/arm64/boot/dts/qcom/sm8250-huawei-dby-w09.dtb dtb
+
 ./magiskboot repack boot.img
+
 fastboot flash boot new-boot.img
 fastboot reboot
 ```

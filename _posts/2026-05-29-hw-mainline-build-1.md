@@ -93,6 +93,10 @@ echo "I camed but no one remembers" > /mnt/msg.txt
 
 ```shell
 find . | cpio -H newc -o > ../ramdisk.cpio
+
+export WKDIR_RAMDISK=/home/arch/wkdir/ramdisk
+cd $WKDIR_RAMDISK
+
 ./magiskboot pack ramdisk.img
 fastboot flash ramdisk new-ramdisk.img
 ```
