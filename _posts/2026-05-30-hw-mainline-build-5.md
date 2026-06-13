@@ -12,6 +12,11 @@ categories: [ Kernel ]
 curl -O https://gitlab.postmarketos.org/postmarketOS/pmaports/-/raw/main/device/testing/linux-postmarketos-qcom-sm8250/config-postmarketos-qcom-sm8250.aarch64
 ```
 
+## 不接受来自 bootloader 的 cmdline
+
+CONFIG_CMDLINE为`console=tty0 clk_ignore_unused`
+启用CONFIG_CMDLINE_FORCE
+
 ## SimpleFB/SimpleDRM
 
 参见https://mainlining.dev/2021/03/02/booting-mainline-kernel/，提出了使用simplefb的方法
