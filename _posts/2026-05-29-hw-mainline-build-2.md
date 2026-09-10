@@ -4,7 +4,7 @@ date: 2026-05-29 17:00:02 +0800
 categories: [ Kernel ]
 ---
 
-## 查询当前内核所需工具链的最低版本
+# 查询当前内核所需工具链的最低版本
 
 可以查询 kernel 源码树中 `scripts/min-tool-version.sh` 以了解所需最低版本工具链。
 
@@ -15,7 +15,7 @@ categories: [ Kernel ]
 | linux-6.6  | 11.0.0       |
 | linux-6.1  | 11.0.0       |
 
-## 切换 LLVM 工具链
+# 切换 LLVM 工具链
 
 本文选择了 AOSP 提供的预编译工具链。截至目前，最新 tag 版本为 `ndk-r29`，
 阅读 `README.md` 得知 `Android Platform Currently clang-r530567`。
@@ -31,7 +31,7 @@ git checkout ndk-r29
 # InstalledDir: /home/ubuntu/linux-x86/clang-r530567/bin
 ```
 
-## 配置内核
+# 配置内核
 
 获取 [config-postmarketos-qcom-sm8250.aarch64](https://gitlab.postmarketos.org/postmarketOS/pmaports/-/raw/c66aa62e36a61ca9fb62da2e894ed87d3b5a32c6/device/testing/linux-postmarketos-qcom-sm8250/config-postmarketos-qcom-sm8250.aarch64) 现成的 config (6.17.0)。
 
@@ -58,15 +58,15 @@ file arch/arm64/boot/Image.gz
 # arch/arm64/boot/Image.gz: gzip compressed data, max compression, from Unix, original size modulo 2^32 42064384
 ```
 
-## 解包 boot.img
+# 解包 boot.img
 
-### 提取本机 boot.img
+## 提取本机 boot.img
 
 ```shell
 dd if=/dev/block/by-name/boot of=/storage/emulated/0/boot.img
 ```
 
-### 传输到电脑上备份并解包
+## 传输到电脑上备份并解包
 
 在电脑上执行以下命令进行解包操作，将输出的 `mkbootimg` 格式信息保存、后面重新封包会用到：
 
@@ -106,7 +106,7 @@ tree -a
 ```
 
 
-## 组装
+# 组装
 
 ```shell
 ./mkbootimg.py \

@@ -4,28 +4,9 @@ date: 2026-05-29 17:00:02 +0800
 categories: [ Kernel ]
 ---
 
-## 准备编写设备树
+# 开始编写设备树
 
-利用 dtc 工具反编译 `boot.img` 中的 dtb 文件，可以作为编写设备树文件的参考：
-
-```shell
-./scripts/dtc/dtc -I dtb -O dts dtb -o dby-w09.dts
-```
-
-新建设备树文件 `arch/arm64/boot/dts/qcom/sm8250-huawei-dby-w09.dts`，并将其加入 `arch/arm64/boot/dts/qcom/Makefile`。
-
-```makefile
-dtb-$(CONFIG_ARCH_QCOM)	+= sm8250-huawei-dby-w09.dtb
-# Enable support for device-tree overlays
-DTC_FLAGS_sm8250-huawei-dby-w09 += -@
-```
-
-[如何优雅地编译Linux内核并做成boot.img与dtbo文件](https://bbs.deepin.org.cn/phone/zh/post/289590)提供了手动编译 overlay 风格 dtb 的方案，
-它也提到了`pd_ignore_unused clk_ignore_unused`等启动参数，可供参考。
-
-## 开始编写设备树
-
-### SimpleFB/SimpleDRM
+## SimpleFB/SimpleDRM
 
 最好测试是否正常运作的方法不过是通过屏幕显示。
 [](https://mainlining.dev/2021/03/02/booting-mainline-kernel/) 提出了使用simplefb的方法，
@@ -37,7 +18,7 @@ DTC_FLAGS_sm8250-huawei-dby-w09 += -@
 https://linux-sunxi.org/Mainline_Kernel_Howto#Early_printk 提到要设定 bootargs 为 `console=tty1`，
 才能在 framebuffer 上看到输出。我设备的实验结果是 `console=tty0`。
 
-### 拒收 bootloader 发来的额外 cmdline
+## 拒收 bootloader 发来的额外 cmdline
 
 除 `boot.img` 传递的参数外，bootloader 还会对内核 `cmdline` 产生额外影响：
 
@@ -46,7 +27,7 @@ https://linux-sunxi.org/Mainline_Kernel_Howto#Early_printk 提到要设定 boota
 
 需要设置 `CONFIG_CMDLINE` 为你需要的 cmdline，同时启用 `CONFIG_CMDLINE_FORCE`。打包 `boot.img` 时可以将 cmdline 字段置空。
 
-### 时钟管理
+## 时钟管理
 
 显示开启后dmesg 10s多提示rsc等待/psci/power-domain-cpu-cluster0
 
@@ -55,7 +36,7 @@ https://linux-sunxi.org/Mainline_Kernel_Howto#Early_printk 提到要设定 boota
 这里就需要为simplefb节点添加power-domain和clocks避免未使用的节点清理，
 拷贝arch/arm64/boot/dts/qcom/sm8250-sony-xperia-edo.dtsi，然后添加cmdline 'clk_ignore_unused'
 
-### PMIC/电源管理
+## PMIC/电源管理
 
 可以照抄`sm8250-xiaomi-pad-elish-common.dtsi`、SONY等设备的regualtor0~2配置，可是我发现DBY-W09上似乎没有PM8009、相比其他设备多了PMK8002。
 
@@ -72,13 +53,13 @@ qcom-rpmh-regulator couldn't find RPMh address for resource for regulator-2 smps
 
 我是删掉了pm8150 `regualtor-0`的部分节点和整个`regulator-2`，可以看到`regulator-fixed`之外的结点都有在运作。
 
-### USB功能、UFS存储
+## USB功能、UFS存储
 
 devicetree配置直接复制`sm8250-xiaomi-pad-elish-common.dtsi`。可以看到该设备只启用了USB2.0，我这里注释了这些USB2.0属性后发现USB用不了。
 
 ufs_mem_phy ufs_mem_hs似乎不能配置 `status = 'disable'`，会导致 simplefb 一闪而过后重启。
 
-## 打包
+# 打包
 
 ```shell
 ./mkbootimg.py \

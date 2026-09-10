@@ -12,12 +12,12 @@ categories: [ Kernel ]
 
 **在行动之前请熟读本文思路，并小心操作。**
 
-## 概念辨析：boot.img 还是 ramdisk.img？
+# 概念辨析：boot.img 还是 ramdisk.img？
 
 - `boot.img` 内含 kernel, dtb。该文件可供 Apatch 修补。
 - `ramdisk.img` 内含 ramdisk。该文件可供 Magisk 修补。
 
-## 获取工具：工欲善其事，必先利其器。
+# 获取工具：工欲善其事，必先利其器。
 
 ```shell
 # 获取 Linux 稳定版本源码树
@@ -33,15 +33,15 @@ git clone https://mirrors.bfsu.edu.cn/git/AOSP/platform/prebuilts/clang/host/lin
 git clone https://mirrors.bfsu.edu.cn/git/AOSP/platform/external/avb.git
 ```
 
-## 解包 ramdisk.img
+# 解包 ramdisk.img
 
-### 提取本机 ramdisk.img
+## 提取本机 ramdisk.img
 
 ```shell
 dd if=/dev/block/by-name/ramdisk of=/storage/emulated/0/ramdisk.img
 ```
 
-### 传输到电脑上备份并解包
+## 传输到电脑上备份并解包
 
 在电脑上执行以下命令进行解包操作，将输出的 `mkbootimg` 格式信息保存、后面重新封包会用到：
 
@@ -90,12 +90,12 @@ tree -a
 # 14 directories, 3 files
 ```
 
-## 创建基本 ramdisk cpio
+# 创建基本 ramdisk cpio
 
 参考[让wayland接管android——systemd wifi 以及 gsi](https://zhuanlan.zhihu.com/p/716822748)，
 本节聚焦于利用 `busybox-static` 打包自定义的 `ramdisk`。
 
-### 拷贝 busybox
+## 拷贝 busybox
 
 本文采用 `aarch64-unknown-linux-musl-clang` 目标静态编译了 `busybox`，具体步骤不做赘述。
 
@@ -129,7 +129,7 @@ tree -a
 # 7 directories, 10 files
 ```
 
-### 编写 init 脚本
+## 编写 init 脚本
 
 这里您可以抄上引用的init内容，我不明白原帖是如何实现拉取lastkmsg.bin，
 我的设备很不幸不能透过bootfail_info读取输出信息。于是我做的工作是挂载/data分区到ramdisk的/mnt，
@@ -167,7 +167,7 @@ echo "init: see you again..."
 > 若无法在/data目录下留言，可以考虑 `mdev -s` 有没有刷新 /dev
 > 我之前的努力似乎是/dev下根本没有sda40 data设备，刷新后即可
 
-## 组装 ramdisk.img 并测试
+# 组装 ramdisk.img 并测试
 
 完成修改后可以重新打包
 
