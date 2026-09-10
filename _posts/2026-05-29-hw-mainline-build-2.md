@@ -1,46 +1,12 @@
 ---
-title: 华为主线内核移植尝试2 Basic Kernel Image
+title: 华为主线内核移植尝试2 基本内核映像
 date: 2026-05-29 17:00:02 +0800
 categories: [ Kernel ]
 ---
 
-HUAWEI MatePad 11 (2021) 款已经有社区玩家破解了BL锁，为玩家提供了更多的可能。
-如今该设备已经停止了系统更新，内核一直停在4.19.157得不到更新。我在尝试chroot容器透过DRM直接显示时
-发现该内核的msm-drm驱动有问题，于是决定重新构建厂商内核。从huawei opensource拉到官方内核源码后，
-我花费大力气尝试通过编译，可是该源码包缺失的lcdkit等内容太多，不是让社区玩家可以轻松编译的。
+## 查询当前内核所需工具链的最低版本
 
-于是我上网搜集资料，了解到该设备搭载的骁龙865处理器已经为主线内核所接受，并且有postmarketOS社区研究。
-我决定移植一个mainline 6.18内核，并将一系列努力历程记录如下。
-
-**行动请熟读本文思路，小心操作。**
-
-## 获取 LLVM 工具链
-
-华为 HarmonyOS kernel 构建采用了一个Qualcomm提供的10.0.7的某LLVM工具链，上网搜素了很多资料。
-也只有蛛丝马迹，并没有可以直接下载的途径。
-
-我决定从 AOSP 下载一个预编译工具链。对于读者您可以自由选择 LLVM 编译器套件，不用AOSP编译器也行。
-
-```shell
-git clone https://mirrors.bfsu.edu.cn/git/AOSP/platform/prebuilts/clang/host/linux-x86.git
-
-# 截至目前，最新ndk版本为 ndk-r27d
-git checkout ndk-r27d
-
-clang -v
-# Android (11039501, +pgo, +bolt, +lto, +mlgo, based on r498229b) clang version 17.0.4 (https://android.googlesource.com/toolchain/llvm-project e34ed7d63863b45858e74126edaa738e75887800)
-# Target: x86_64-unknown-linux-gnu
-# Thread model: posix
-# InstalledDir: /home/arch/linux-x86/clang-r498229b/bin
-# Found candidate GCC installation: /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1
-# Found candidate GCC installation: /usr/lib64/gcc/x86_64-pc-linux-gnu/16.1.1
-# Selected GCC installation: /usr/lib64/gcc/x86_64-pc-linux-gnu/16.1.1
-# Candidate multilib: .;@m64
-# Candidate multilib: 32;@m32
-# Selected multilib: .;@m64
-```
-
-可以看到该LLVM工具链也没有很新，也只能编译6.6内核。可以查询你的kernel源码树中`scripts/min-tool-version.sh`以了解所需最低版本工具链。
+可以查询 kernel 源码树中 `scripts/min-tool-version.sh` 以了解所需最低版本工具链。
 
 | LTS kernel | 最低LLVM版本 |
 | ---------- | ------------ |
@@ -49,41 +15,117 @@ clang -v
 | linux-6.6  | 11.0.0       |
 | linux-6.1  | 11.0.0       |
 
-## 配置 kernel config
+## 切换 LLVM 工具链
 
-这里我是以厂商config为参考，可以透过`zcat /proc/config.gz`来获得。配置过程太过繁琐，不做赘述。
+本文选择了 AOSP 提供的预编译工具链。截至目前，最新 tag 版本为 `ndk-r29`，
+阅读 `README.md` 得知 `Android Platform Currently clang-r530567`。
 
 ```shell
-# 我这里从 tinyconfig 出发，图简单可以从defconfig出发。
-make \
-    ARCH=arm64 LLVM=1 \
-    tinyconfig
+cd linux-x86
+git checkout ndk-r29
 
+./clang-r530567/bin/clang -v
+# Android (12328485, +pgo, +bolt, +lto, +mlgo, based on r530567) clang version 19.0.0 (https://android.googlesource.com/toolchain/llvm-project 97a699bf4812a18fb657c2779f5296a4ab2694d2)
+# Target: x86_64-unknown-linux-gnu
+# Thread model: posix
+# InstalledDir: /home/ubuntu/linux-x86/clang-r530567/bin
+```
+
+## 配置内核
+
+获取 [config-postmarketos-qcom-sm8250.aarch64](https://gitlab.postmarketos.org/postmarketOS/pmaports/-/raw/c66aa62e36a61ca9fb62da2e894ed87d3b5a32c6/device/testing/linux-postmarketos-qcom-sm8250/config-postmarketos-qcom-sm8250.aarch64) 现成的 config (6.17.0)。
+
+可以使用 `ccache` 缓存以加速重新编译(recompile)。
+
+```shell
+KBUILD_BUILD_TIMESTAMP='' \
 make \
     ARCH=arm64 LLVM=1 \
+    CC="ccache clang" \
     menuconfig
 
+KBUILD_BUILD_TIMESTAMP='' \
 make \
     ARCH=arm64 LLVM=1 \
-    -j16
+    CC="ccache clang" \
+    -j`nproc --all`
 ```
+
+检查产出内核映像
+
+```shell
+file arch/arm64/boot/Image.gz
+# arch/arm64/boot/Image.gz: gzip compressed data, max compression, from Unix, original size modulo 2^32 42064384
+```
+
+## 解包 boot.img
+
+### 提取本机 boot.img
+
+```shell
+dd if=/dev/block/by-name/boot of=/storage/emulated/0/boot.img
+```
+
+### 传输到电脑上备份并解包
+
+在电脑上执行以下命令进行解包操作，将输出的 `mkbootimg` 格式信息保存、后面重新封包会用到：
+
+```shell
+./unpack_bootimg.py --boot_img boot.img --format mkbootimg
+```
+
+未指定时默认输出目录为 `out/`，检查输出、可以看到 `ramdisk.img` 中包含：
+
+```shell
+file dtb
+# dtb: Device Tree Blob version 17, size=555343, boot CPU=0, string block size=47887, DT structure block size=507400
+file kernel
+# kernel: gzip compressed data, max compression, from Unix, original size modulo 2^32 57466896
+file ramdisk
+# ramdisk: gzip compressed data, from Unix, original size modulo 2^32 1093888
+```
+
+`kernel` 对应 `Image.gz`, `dtb` 是编译过的设备树文件。解包 `ramdisk(.cpio.gz)`
+
+```shell
+mkdir ramdisk_dir && cd ramdisk_dir
+gzip -dc ../ramdisk | cpio -idv
+```
+
+检查 cpio 解包内容，发现几乎无用、主要内容已经出现在 `ramdisk.img` 中。
+
+```shell
+tree -a
+# .
+# ├── fstab.qcom
+# └── system
+#     └── bin
+#         └── e2fsck
+# 
+# 3 directories, 2 files
+```
+
 
 ## 组装
 
 ```shell
-export WKDIR_BOOT=/home/arch/wkdir/boot
-cd $WKDIR_BOOT
-
-./magiskboot unpack boot.img
-mv kernel kernel.bak
-
-export KERNEL_SRCTREE=/home/arch/sources/linux-6.6
-cp $KERNEL_SRCTREE/arch/arm64/boot/Image kernel
-
-./magiskboot repack boot.img
-
-fastboot flash boot new-boot.img
-fastboot reboot
+./mkbootimg.py \
+    --header_version 2 \
+    --os_version 11.0.0 \
+    --os_patch_level 2020-11 \
+    --kernel out/kernel \
+    --ramdisk out/ramdisk \
+    --dtb out/dtb \
+    --pagesize 0x00001000 \
+    --base 0x00000000 \
+    --kernel_offset 0x00008000 \
+    --ramdisk_offset 0x02000000 \
+    --second_offset 0x00000000 \
+    --tags_offset 0x00000100 \
+    --dtb_offset 0x0000000001f00000 \
+    --board '' \
+    --cmdline 'earlycon=msm_geni_serial,0xa90000 androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 video=vfb:640x400,bpp=32,memsize=3072000 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm unmovable_isolate1=2:256M,3:312M,4:348M buildvariant=user' \
+    --output boot_new.img
 ```
 
-我这里看到的是开机卡第一屏，我的情况是ramdisk里面是上一节刷入的busybox留言initramfs，看来没有顺利调起init。
+其实该镜像缺乏合适的设备树，压根没法启动。下一节将聚焦于编写合适的设备树。
