@@ -46,10 +46,10 @@ dd if=/dev/block/by-name/ramdisk of=/storage/emulated/0/ramdisk.img
 在电脑上执行以下命令进行解包操作，将输出的 `mkbootimg` 格式信息保存、后面重新封包会用到：
 
 ```shell
-./unpack_bootimg.py --boot_img ramdisk.img --format mkbootimg
+./unpack_bootimg.py --boot_img ramdisk.img --format mkbootimg --out out-ramdisk
 ```
 
-未指定时默认输出目录为 `out/`，检查输出、可以看到 `ramdisk.img` 中包含：
+检查输出、可以看到 `ramdisk.img` 中包含：
 
 ```shell
 file kernel
@@ -143,12 +143,8 @@ echo "init: mount filesystems"
 /bin/mount -t sysfs sysfs /sys
 /bin/mount -t tmpfs tmpfs /tmp
 
-echo "init: mount devtmpfs"
+echo "init: mount /dev"
 /bin/mount -t devtmpfs devtmpfs /dev
-/bin/mknod /dev/console c 5 1
-/bin/mknod /dev/null c 1 3
-
-echo "init: mount devpts"
 /bin/mkdir /dev/pts
 /bin/mount -t devpts devpts /dev/pts
 
@@ -178,8 +174,8 @@ find . | cpio -H newc -o | gzip > ../ramdisk
     --header_version 0 \
     --os_version 12.0.0 \
     --os_patch_level 2021-12 \
-    --kernel out/kernel \
-    --ramdisk out/ramdisk \
+    --kernel out-ramdisk/kernel \
+    --ramdisk out-ramdisk/ramdisk \
     --pagesize 0x00000800 \
     --base 0x00000000 \
     --kernel_offset 0x10008000 \

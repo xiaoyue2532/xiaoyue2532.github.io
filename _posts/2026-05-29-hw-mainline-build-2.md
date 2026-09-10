@@ -71,7 +71,7 @@ dd if=/dev/block/by-name/boot of=/storage/emulated/0/boot.img
 在电脑上执行以下命令进行解包操作，将输出的 `mkbootimg` 格式信息保存、后面重新封包会用到：
 
 ```shell
-./unpack_bootimg.py --boot_img boot.img --format mkbootimg
+./unpack_bootimg.py --boot_img boot.img --format mkbootimg --out out-boot
 ```
 
 未指定时默认输出目录为 `out/`，检查输出、可以看到 `ramdisk.img` 中包含：
@@ -113,9 +113,9 @@ tree -a
     --header_version 2 \
     --os_version 11.0.0 \
     --os_patch_level 2020-11 \
-    --kernel out/kernel \
-    --ramdisk out/ramdisk \
-    --dtb out/dtb \
+    --kernel out-boot/kernel \
+    --ramdisk out-boot/ramdisk \
+    --dtb out-boot/dtb \
     --pagesize 0x00001000 \
     --base 0x00000000 \
     --kernel_offset 0x00008000 \

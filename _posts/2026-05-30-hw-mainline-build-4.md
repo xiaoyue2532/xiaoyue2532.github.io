@@ -9,13 +9,14 @@ categories: [ Kernel ]
 ## SimpleFB/SimpleDRM
 
 最好测试是否正常运作的方法不过是通过屏幕显示。
-[](https://mainlining.dev/2021/03/02/booting-mainline-kernel/) 提出了使用simplefb的方法，
+
+[Booting mainline kernel](https://mainlining.dev/2021/03/02/booting-mainline-kernel/) 提出了使用simplefb的方法，
 开启 `CONFIG_FB_SIMPLE`、同时在设备树中插入 `compatible="simpleframebuffer"` 节点。
 
 可以考虑开启 `CONFIG_DRM_SIMPLEDRM`，使用simpleDRM驱动代替simpleFB，都能匹配 `compatible="simpleframebuffer"`。
 注意 `CONFIG_FB_SIMPLE` 与 `CONFIG_DRM_SIMPLEDRM` 互斥。
 
-https://linux-sunxi.org/Mainline_Kernel_Howto#Early_printk 提到要设定 bootargs 为 `console=tty1`，
+[Mainline Kernel Howto](https://linux-sunxi.org/Mainline_Kernel_Howto#Early_printk) 提到要设置 `console=tty1`，
 才能在 framebuffer 上看到输出。我设备的实验结果是 `console=tty0`。
 
 ## 拒收 bootloader 发来的额外 cmdline
@@ -66,9 +67,9 @@ ufs_mem_phy ufs_mem_hs似乎不能配置 `status = 'disable'`，会导致 simple
     --header_version 2 \
     --os_version 11.0.0 \
     --os_patch_level 2020-11 \
-    --kernel out/kernel \
-    --ramdisk out/ramdisk \
-    --dtb out/dtb \
+    --kernel out-boot/kernel \
+    --ramdisk out-boot/ramdisk \
+    --dtb out-boot/dtb \
     --pagesize 0x00001000 \
     --base 0x00000000 \
     --kernel_offset 0x00008000 \
