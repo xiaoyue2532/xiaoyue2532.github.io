@@ -40,15 +40,15 @@ xxd /proc/device-tree/qcom,board-id
 
 # 注意 dtc 的 -@ 参数不能少
 # 将 9 个 DTB 转为 DTC
-for i in {0..8}; do ./dtc -@ -I dtb -O dts dtb.$i -o dts.$i; done
+for i in {0..8}; do ./dtc -@ -I dtb -O dts dtb.$i -o $i.dts; done
 
 # 修改 9 个 dtbo 源码
 
 # 再将 9 个 DTC 转为 DTB
-for i in {0..8}; do ./dtc -@ -I dts -O dtb dts.$i -o dtb.$i; done
+for i in {0..8}; do ./dtc -@ -I dts -O dtb $i.dts -o $i.dtb; done
 
 # 重新包装 dtbo
-mkfdimg create new-dtbo.img dtb.{0,1,2,3,4,5,6,7,8}
+mkfdimg create new-dtbo.img {0,1,2,3,4,5,6,7,8}.dtb
 ```
 
 # 准备编写设备树

@@ -138,26 +138,30 @@ tree -a
 ```shell
 #!/bin/sh
 
+PATH=/bin
+export PATH
+
 echo "init: mount filesystems"
-/bin/mount -t proc proc /proc
-/bin/mount -t sysfs sysfs /sys
-/bin/mount -t tmpfs tmpfs /tmp
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t tmpfs tmpfs /tmp
 
 echo "init: mount /dev"
-/bin/mount -t devtmpfs devtmpfs /dev
-/bin/mkdir /dev/pts
-/bin/mount -t devpts devpts /dev/pts
+mount -t devtmpfs devtmpfs /dev
+mkdir /dev/pts
+mount -t devpts devpts /dev/pts
 
 echo "init: run mdev"
-/bin/mdev -s
+echo /bin/mdev > /proc/sys/kernel/hotplug
+mdev -s
 
 echo "init: starting processes..."
-/bin/mount /dev/sda40 /mnt
+mount /dev/sda40 /mnt
 echo "I camed but no one remembers" > /mnt/msg.txt
-/bin/umount /mnt
+umount /mnt
 
 echo "init: see you again..."
-/bin/reboot
+reboot
 ```
 
 > 若无法在/data目录下留言，可以考虑 `mdev -s` 有没有刷新 /dev

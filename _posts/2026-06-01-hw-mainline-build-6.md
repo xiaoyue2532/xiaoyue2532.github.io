@@ -4,6 +4,14 @@ date: 2026-06-01 20:00:02 +0800
 categories: [ Kernel ]
 ---
 
+KBUILD_BUILD_TIMESTAMP='' \
+make \
+    ARCH=arm64 LLVM=1 \
+    CC="ccache clang" \
+    INSTALL_MOD_STRIP=1 \
+    INSTALL_MOD_PATH="$PWD/modules" \
+    modules_install
+
 选择alpine是因为它小小的也很可爱
 
 https://mirrors.nju.edu.cn/alpine/latest-stable/releases/aarch64/alpine-minirootfs-3.23.4-aarch64.tar.gz
