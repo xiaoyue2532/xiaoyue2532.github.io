@@ -1,11 +1,13 @@
 ---
-title: 搭建面向 arm 的 LLVM 工具链
-date: 2026-03-24 16:16:00 +0800
+title: 构建 LLVM 交叉工具链
+date: 2026-10-07 19:19:00 +0800
 categories: [ LLVM ]
 ---
 
-LLVM 是一套天生的交叉编译器。参考[LLVM cross-compiled Linux From Scratch: C & C++ libraries](https://12101111.github.io/llvm-cross-compile/)，本文以 arm-unknown-linux-musleabihf 为例，搭建了一套 LLVM 交叉编译工具链，即：
+LLVM 是一套天生的交叉编译器。参考[LLVM cross-compiled Linux From Scratch: C & C++ libraries](https://12101111.github.io/llvm-cross-compile/)，
+本文以 arm-unknown-linux-musleabihf 为例，搭建了一套 LLVM 交叉编译工具链，即：
 
+- LLVM version: 20.1.8
 - 工具链运行平台: x86_64-pc-linux-gnu
 - 工具链产出目标: arm-unknown-linux-musleabihf
 
@@ -23,13 +25,13 @@ LLVM 是一套天生的交叉编译器。参考[LLVM cross-compiled Linux From S
 参照[Rust Platform Support](https://doc.rust-lang.org/nightly/rustc/platform-support.html), 
 本文选择`unknown`作为厂商名，对于不同的平台三元组，有：
 
-| 三元组名称                  | musl 动态连接器            | compiler-rt 名称               |
-| :----------------------------: | :-------------------------: | :------------------------------: |
-| arm-unknown-linux-musleabi   | /lib/ld-musl-arm.so.1     | libclang_rt.builtins-arm.a     |
-| arm-unknown-linux-musleabihf | /lib/ld-musl-armhf.so.1   | libclang_rt.builtins-armhf.a   |
-| aarch64-unknown-linux-musl   | /lib/ld-musl-aarch64.so.1 | libclang_rt.builtins-aarch64.a |
-| x86_64-unknown-linux-musl    | /lib/ld-musl-x86_64.so.1  | libclang_rt.builtins-x86_64.a  |
-| i386-unknown-linux-musl      | /lib/ld-musl-i386.so.1    | libclang_rt.builtins-i386.a    |
+|          三元组名称          |      musl 动态连接器      |        compiler-rt 名称        |
+| :--------------------------: | :-----------------------: | :----------------------------: |
+|  arm-unknown-linux-musleabi  |   /lib/ld-musl-arm.so.1   |   libclang_rt.builtins-arm.a   |
+| arm-unknown-linux-musleabihf |  /lib/ld-musl-armhf.so.1  |  libclang_rt.builtins-armhf.a  |
+|  aarch64-unknown-linux-musl  | /lib/ld-musl-aarch64.so.1 | libclang_rt.builtins-aarch64.a |
+|  x86_64-unknown-linux-musl   | /lib/ld-musl-x86_64.so.1  | libclang_rt.builtins-x86_64.a  |
+|   i386-unknown-linux-musl    |  /lib/ld-musl-i386.so.1   |  libclang_rt.builtins-i386.a   |
 
 若选择三元组`armv8-unknown-linux-musl`，compiler-rt的文件名就是`libclang_rt.builtins-armv8.a.`。事实上，很多 configure 脚本不认识 `armv8-unknown-linux-musl`,`armv7-unknown-linux-musl`，只认可GNU风格的元组`arm-unknown-linux-musleabi`、`aarch64-unknown-linux-musl`。若想指定架构，使用参数`-march=armv7-a`、`-march=armv8-a`。
 
@@ -37,24 +39,28 @@ LLVM 是一套天生的交叉编译器。参考[LLVM cross-compiled Linux From S
 
 `arm-unknown-linux-musleabi` 默认采用软浮点，在clang cc1 参数中有 `-mfloat-abi=soft`。而`arm-unknown-linux-musleabihf`采用硬浮点，在clang cc1参数中有`-mfloat-abi=hard`。
 
-## 构建纯正的 LLVM 工具链
+`riscv64-unknown-linux-musl` 默认`-mabi=lp64d`,`riscv32-unknown-linux-musl`默认`-mabi=ilp32d`，
+于是本文自定义了vendor为lp64、lp64f、lp64d的riscv64目标，vendor为ilp32、ilp32f、ilp32d的riscv32目标
 
+|        四元组名称         |     ABI      |       musl 动态连接器        |
+| :-----------------------: | :----------: | :--------------------------: |
+|  riscv64-lp64-linux-musl  |  -mabi=lp64  | /lib/ld-musl-riscv64-sf.so.1 |
+| riscv64-lp64f-linux-musl  | -mabi=lp64f  | /lib/ld-musl-riscv64-sp.so.1 |
+| riscv64-lp64d-linux-musl  |    (none)    |  /lib/ld-musl-riscv64.so.1   |
+| riscv32-ilp32-linux-musl  | -mabi=ilp32  | /lib/ld-musl-riscv32-sf.so.1 |
+| riscv32-ilp32f-linux-musl | -mabi=ilp32f | /lib/ld-musl-riscv32-sp.so.1 |
+| riscv32-ilp32d-linux-musl |    (none)    |  /lib/ld-musl-riscv32.so.1   |
+
+## 构建纯正的 LLVM 工具链
 
 ```shell
 # 安装发行版提供的 LLVM 套装
-sudo pacman -S clang llvm lld compiler-rt libc++ libc++abi
-# 从 AUR 安装 llvm-libunwind 注意并非发行版提供的 nognu libunwind
-paru -S llvm-libunwind
-
-cat > /usr/bin/x86_64-unknown-linux-gnu.cfg << EOF
--fuse-ld=lld
--rtlib=compiler-rt
--stdlib=libc++
--unwindlib=libunwind
-EOF
+sudo pacman -S clang llvm lld
 
 # 参考 https://github.com/xiaoyue2532/CMLFS/tree/main/2-Stage1
 # 本工具链的很多思路都来自 CMLFS 和我对其进一步完善的 Fork
+# LLVM_TARGETS_TO_BUILD 选中所需的目标 省得构建不需要的目标而构建速度太久
+# LLVM_INSTALL_TOOLCHAIN_ONLY 减小安装大小 不用安装LLVM开发的库
 cmake \
     -G Ninja \
     -DCMAKE_BUILD_TYPE=Release  \
@@ -69,14 +75,18 @@ cmake \
     -DCLANG_DEFAULT_OBJCOPY=llvm-objcopy \
     -DCLANG_DEFAULT_RTLIB=compiler-rt \
     -DCLANG_DEFAULT_UNWINDLIB=libunwind \
-    -DDEFAULT_SYSROOT="/llvmtools" \
+    -DENABLE_LINKER_BUILD_ID=ON \
     -DLLVM_BUILD_LLVM_DYLIB=ON \
+    -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-pc-linux-gnu" \
     -DLLVM_ENABLE_PROJECTS="clang;lld" \
     -DLLVM_ENABLE_RTTI=ON \
-    -DLLVM_HOST_TRIPLE="x86_64-pc-linux-musl" \
+    -DLLVM_HOST_TRIPLE="x86_64-pc-linux-gnu" \
     -DLLVM_INCLUDE_BENCHMARKS=OFF \
-    -DLLVM_INSTALL_UTILS=ON \
+    -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
     -DLLVM_LINK_LLVM_DYLIB=ON \
+    -DLLVM_ENABLE_LLD=ON \
+    -DLLVM_ENABLE_LIBEDIT=OFF \
+    -DLLVM_ENABLE_LIBXML2=OFF \
     ../llvm
 
 # 编译并安装到 /llvmtools
@@ -88,16 +98,16 @@ ninja && ninja install/strip
 ```shell
 # 将汇编器 as 链接到 clang 而非 llvm-as
 # 前者是调用 clang 的集成汇编器 后者是 LLVM Bitcode 的编译器
-ln -sf clang-21 /llvmtools/bin/arm-unknown-linux-musleabihf-as
+ln -sf clang-20 /llvmtools/bin/arm-unknown-linux-musleabihf-as
 
 # 编译器
-ln -sf clang-21 /llvmtools/bin/arm-unknown-linux-musleabihf-cc
-ln -sf clang-21 /llvmtools/bin/arm-unknown-linux-musleabihf-c++
-ln -sf clang-21 /llvmtools/bin/arm-unknown-linux-musleabihf-clang
-ln -sf clang-21 /llvmtools/bin/arm-unknown-linux-musleabihf-clang++
+ln -sf clang-20 /llvmtools/bin/arm-unknown-linux-musleabihf-cc
+ln -sf clang-20 /llvmtools/bin/arm-unknown-linux-musleabihf-c++
+ln -sf clang-20 /llvmtools/bin/arm-unknown-linux-musleabihf-clang
+ln -sf clang-20 /llvmtools/bin/arm-unknown-linux-musleabihf-clang++
 
 # 预处理器
-ln -sf clang-21 /llvmtools/bin/arm-unknown-linux-musleabihf-cpp
+ln -sf clang-20 /llvmtools/bin/arm-unknown-linux-musleabihf-cpp
 
 # 链接器
 ln -sf lld /llvmtools/bin/arm-unknown-linux-musleabihf-ld
@@ -112,7 +122,7 @@ ln -sf llvm-objcopy /llvmtools/bin/arm-unknown-linux-musleabihf-objcopy
 ln -sf llvm-objdump /llvmtools/bin/arm-unknown-linux-musleabihf-objdump
 ln -sf llvm-readobj /llvmtools/bin/arm-unknown-linux-musleabihf-readelf
 ln -sf llvm-size /llvmtools/bin/arm-unknown-linux-musleabihf-size
-ln -s llvm-strings /llvmtools/bin/arm-unknown-linux-musleabihf-strings
+ln -sf llvm-strings /llvmtools/bin/arm-unknown-linux-musleabihf-strings
 ln -sf llvm-objcopy /llvmtools/bin/arm-unknown-linux-musleabihf-strip
 
 # 若想建立 mingw 的工具链 还可以考虑创建对 llvm-windres llvm-dlltool 等工具的链接 此处不赘述
@@ -163,7 +173,7 @@ make DESTDIR=/llvmtools/arm-unknown-linux-musleabihf install-headers
 cmake \
     -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/llvmtools/lib/clang/21/ \
+    -DCMAKE_INSTALL_PREFIX=/llvmtools/lib/clang/20/ \
     -DCMAKE_ASM_COMPILER=clang \
     -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf \
     -DCMAKE_C_COMPILER=clang \
@@ -221,7 +231,7 @@ ninja && ninja install/strip
 
 ```shell
 CC=arm-unknown-linux-musleabihf-clang \
-LIBCC=/llvmtools/lib/clang/21/lib/linux/libclang_rt.builtins-armhf.a \
+LIBCC=/llvmtools/lib/clang/20/lib/linux/libclang_rt.builtins-armhf.a \
 ./configure \
     --prefix=/ \
     --build=x86_64-pc-linux-gnu \
@@ -266,7 +276,7 @@ cmake \
     -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
     -DCOMPILER_RT_BUILD_XRAY=OFF \
     -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
-    -DCOMPILER_RT_INSTALL_PATH=/llvmtools/lib/clang/21 \
+    -DCOMPILER_RT_INSTALL_PATH=/llvmtools/lib/clang/20 \
     -DCXX_SUPPORTS_FNO_EXCEPTIONS_FLAG=1 \
     -DLIBCXXABI_ENABLE_STATIC_UNWINDER=ON \
     -DLIBCXXABI_USE_COMPILER_RT=ON \
