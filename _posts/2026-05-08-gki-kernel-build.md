@@ -15,7 +15,7 @@ chmod a+x ~/.bin/repo
 
 ```shell
 mkdir android-kernel && cd android-kernel
-repo init -u https://mirrors.bfsu.edu.cn/git/AOSP/kernel/manifest -b common-android12-5.10-2026-04
+repo init -u https://mirror.nju.edu.cn/git/aosp/kernel/manifest.git -b common-android12-5.10-2026-07
 ```
 
 ## Start Build!
