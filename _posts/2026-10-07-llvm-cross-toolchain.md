@@ -184,8 +184,8 @@ cmake \
     -DCMAKE_CXX_COMPILER_TARGET=arm-unknown-linux-musleabihf \
     -DCMAKE_CXX_COMPILER_WORKS=1 \
     -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
-    -DCOMPILER_RT_BUILD_CRT=ON \
     -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF \
+    -DCOMPILER_RT_BUILD_GWP_ASAN=OFF \
     -DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
     -DCOMPILER_RT_BUILD_MEMPROF=OFF \
     -DCOMPILER_RT_BUILD_ORC=OFF \
@@ -366,9 +366,6 @@ local cmake_args=(
     -DCMAKE_ASM_COMPILER=clang
     -DCMAKE_C_COMPILER=clang
     -DCMAKE_CXX_COMPILER=clang++
-    # # Don't check whether the compilers work
-    # -DCMAKE_C_COMPILER_WORKS=1
-    # -DCMAKE_CXX_COMPILER_WORKS=1
     # Specify compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY works
     # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work,
     # compiler-rt would not build CRT or builtin library.
@@ -383,27 +380,10 @@ local cmake_args=(
     -DCMAKE_CXX_FLAGS="-D_LARGEFILE64_SOURCE"
     # gwp_asan need a backtrace library, to be exactly libexecinfo
     -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
-    # # At the bootstrap stage we need to turn them off
-    # -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF
-    # -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
-    # -DCOMPILER_RT_BUILD_MEMPROF=OFF
-    # -DCOMPILER_RT_BUILD_ORC=OFF
-    # -DCOMPILER_RT_BUILD_PROFILE=OFF
-    # -DCOMPILER_RT_BUILD_SANITIZERS=OFF
-    # -DCOMPILER_RT_BUILD_XRAY=OFF
     # Enable the two lines below so that compiler-rt miscs would build
     -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON
     -DCOMPILER_RT_USE_LLVM_UNWINDER=ON
     -DCOMPILER_RT_INSTALL_PATH="/llvmtools/lib/clang/20"
-    # # Bootstrap libunwind detects whether clang++ builds. A few libraries are missing, 
-    # # so the build always fail. According to `libunwind/src/CMakeLists.txt`:
-    # #   message(FATAL_ERROR
-    # #           "Compiler doesn't support generation of unwind tables if exception "
-    # #           "support is disabled.  Building libunwind DSO with runtime dependency "
-    # #           "on C++ ABI library is not supported.")
-    # # cmake would report a error saying that the compiler does not support rtti even
-    # # though `LLVM_ENABLE_RTTI=ON`, so break the condition
-    # -DCXX_SUPPORTS_FNO_EXCEPTIONS_FLAG=1
     ## libc++abi library
     # link libc++abi.so to libunwind statically, or libc++abi.so depends on libunwind.so
     -DLIBCXXABI_ENABLE_STATIC_UNWINDER=ON
