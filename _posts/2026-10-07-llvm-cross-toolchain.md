@@ -158,6 +158,7 @@ make ARCH=arm \
 # 需要指定正确的 host 否则默认会安装 build 架构的头文件
 # 即本应安装 arm 头文件却误安装成 x86_64 的头文件
 # 导致 musl libc 编译报错 float.h 中的类型与编译器中的类型不匹配
+CC=arm-unknown-linux-musleabihf-clang \
 ./configure \
     --prefix=/ \
     --build=x86_64-pc-linux-gnu \
@@ -255,45 +256,76 @@ ln -s /llvmtools/arm-unknown-linux-musleabihf/ld-musl-armhf.so.1 /lib/ld-musl-ar
 一次性编译 libc++, libc++abi, compiler-rt 和 llvm-libunwind。
 
 ```shell
+local cmake_args=(
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_INSTALL_PREFIX=/llvmtools/arm-unknown-linux-musleabihf
+    # Specify llvm binutils with absolute path
+    -DCMAKE_AR="/llvmtools/bin/llvm-ar"
+    -DCMAKE_NM="/llvmtools/bin/llvm-nm"
+    -DCMAKE_RANLIB="/llvmtools/bin/llvm-ranlib"
+    # Specify compilers
+    -DCMAKE_ASM_COMPILER=clang
+    -DCMAKE_C_COMPILER=clang
+    -DCMAKE_CXX_COMPILER=clang++
+    # Don't check whether the compilers work
+    -DCMAKE_C_COMPILER_WORKS=1
+    -DCMAKE_CXX_COMPILER_WORKS=1
+    # Specify compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY works
+    # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work,
+    # compiler-rt would not build CRT or builtin library.
+    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCMAKE_CXX_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
+    # specify sysroot or clang would look for host's sysroot /usr
+    -DCMAKE_SYSROOT=/llvmtools/arm-unknown-linux-musleabihf
+    # musl hides `stat64` under `_LARGEFILE64_SOURCE`
+    -DCMAKE_C_FLAGS="-D_LARGEFILE64_SOURCE"
+    -DCMAKE_CXX_FLAGS="-D_LARGEFILE64_SOURCE"
+    # gwp_asan need a backtrace library, to be exactly libexecinfo
+    -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
+    # At the bootstrap stage we need to turn them off
+    -DCOMPILER_RT_BUILD_ORC=OFF
+    -DCOMPILER_RT_BUILD_XRAY=OFF
+    # Enable the two lines below so that compiler-rt miscs would build
+    -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON
+    -DCOMPILER_RT_USE_LLVM_UNWINDER=ON
+    -DCOMPILER_RT_INSTALL_PATH="/llvmtools/lib/clang/20"
+    # Bootstrap libunwind detects whether clang++ builds. A few libraries are missing, 
+    # so the build always fail. According to `libunwind/src/CMakeLists.txt`:
+    #   message(FATAL_ERROR
+    #           "Compiler doesn't support generation of unwind tables if exception "
+    #           "support is disabled.  Building libunwind DSO with runtime dependency "
+    #           "on C++ ABI library is not supported.")
+    # cmake would report a error saying that the compiler does not support rtti even
+    # though `LLVM_ENABLE_RTTI=ON`, so break the condition
+    -DCXX_SUPPORTS_FNO_EXCEPTIONS_FLAG=1
+    ## libc++abi library
+    # link libc++abi.so to libunwind statically, or libc++abi.so depends on libunwind.so
+    -DLIBCXXABI_ENABLE_STATIC_UNWINDER=ON
+    -DLIBCXXABI_USE_COMPILER_RT=ON
+    -DLIBCXXABI_USE_LLVM_UNWINDER=ON
+    ## libc++ library
+    -DLIBCXX_CXX_ABI=libcxxabi
+    # link libc++.so to libc++abi statically, or libc++.so depends on libc++abi.so
+    -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON
+    -DLIBCXX_USE_COMPILER_RT=ON
+    # musl must enable this!
+    -DLIBCXX_HAS_MUSL_LIBC=ON
+    ## runtimes to build
+    -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind;compiler-rt"
+)
+
 cmake \
-    -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/llvmtools/arm-unknown-linux-musleabihf \
-    -DCMAKE_ASM_COMPILER=clang \
-    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf \
-    -DCMAKE_C_COMPILER=clang \
-    -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf \
-    -DCMAKE_C_COMPILER_WORKS=1 \
-    -DCMAKE_CXX_COMPILER=clang++ \
-    -DCMAKE_CXX_COMPILER_TARGET=arm-unknown-linux-musleabihf \
-    -DCMAKE_CXX_COMPILER_WORKS=1 \
-    -DCOMPILER_RT_BUILD_CRT=ON \
-    -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF \
-    -DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
-    -DCOMPILER_RT_BUILD_MEMPROF=OFF \
-    -DCOMPILER_RT_BUILD_ORC=OFF \
-    -DCOMPILER_RT_BUILD_PROFILE=OFF \
-    -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
-    -DCOMPILER_RT_BUILD_XRAY=OFF \
-    -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
-    -DCOMPILER_RT_INSTALL_PATH=/llvmtools/lib/clang/20 \
-    -DCXX_SUPPORTS_FNO_EXCEPTIONS_FLAG=1 \
-    -DLIBCXXABI_ENABLE_STATIC_UNWINDER=ON \
-    -DLIBCXXABI_USE_COMPILER_RT=ON \
-    -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-    -DLIBCXX_CXX_ABI=libcxxabi \
-    -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
-    -DLIBCXX_USE_COMPILER_RT=ON \
-    -DLIBCXX_HAS_MUSL_LIBC=ON \
-    -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind;compiler-rt" \
-    ../runtimes
+    -G Ninja -S ../runtimes \
+    "${cmake_args[@]}"
 
 ninja && ninja install/strip
 ```
 
 ## 完备配置文件
 
-此时使用 arm-unknown-linux-musleabihf-clang++ 会找不到 C++ 头文件，需要补上搜索目录
+~~此时使用 arm-unknown-linux-musleabihf-clang++ 会找不到 C++ 头文件，需要补上搜索目录~~
 
 ```shell
 cat >> /llvmtools/bin/arm-unknown-linux-musleabihf.cfg << EOF
@@ -303,9 +335,85 @@ cat >> /llvmtools/bin/arm-unknown-linux-musleabihf.cfg << EOF
 EOF
 ```
 
-加上以上搜索路径后，有几处弊端：
+~~加上以上搜索路径后，有几处弊端：~~
 
-- 用工具链构建 musl 时，强制指定的搜索目录会与 musl 源码的搜索目录冲突
-- 用工具链构建 llvm-runtimes 时，强制指定的搜索目录会与 llvm-runtimes 源码的搜索目录冲突
+~~- 用工具链构建 musl 时，强制指定的搜索目录会与 musl 源码的搜索目录冲突~~
+~~- 用工具链构建 llvm-runtimes 时，强制指定的搜索目录会与 llvm-runtimes 源码的搜索目录冲突~~
 
-因此在构建上述项目时，需要将这3行搜索路径用`#`注释掉。
+~~因此在构建上述项目时，需要将这3行搜索路径用`#`注释掉。~~
+
+UPDATE: 不必再 `-nostdinc++` 并手动指定 libc++ 搜索路径，只需要创建一个符号链接。
+
+```shell
+ln -s . /llvmtools/arm-unknown-linux-musleabihf/usr
+```
+
+## Rebuild llvm-runtimes
+
+```shell
+local cmake_args=(
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_INSTALL_PREFIX=/llvmtools/arm-unknown-linux-musleabihf
+    # Specify llvm binutils with absolute path
+    -DCMAKE_AR="/llvmtools/bin/llvm-ar"
+    -DCMAKE_NM="/llvmtools/bin/llvm-nm"
+    -DCMAKE_RANLIB="/llvmtools/bin/llvm-ranlib"
+    # Specify compilers
+    -DCMAKE_ASM_COMPILER=clang
+    -DCMAKE_C_COMPILER=clang
+    -DCMAKE_CXX_COMPILER=clang++
+    # # Don't check whether the compilers work
+    # -DCMAKE_C_COMPILER_WORKS=1
+    # -DCMAKE_CXX_COMPILER_WORKS=1
+    # Specify compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY works
+    # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work,
+    # compiler-rt would not build CRT or builtin library.
+    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCMAKE_CXX_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
+    # specify sysroot or clang would look for host's sysroot /usr
+    -DCMAKE_SYSROOT=/llvmtools/arm-unknown-linux-musleabihf
+    # musl hides `stat64` under `_LARGEFILE64_SOURCE`
+    -DCMAKE_C_FLAGS="-D_LARGEFILE64_SOURCE"
+    -DCMAKE_CXX_FLAGS="-D_LARGEFILE64_SOURCE"
+    # gwp_asan need a backtrace library, to be exactly libexecinfo
+    -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
+    # # At the bootstrap stage we need to turn them off
+    # -DCOMPILER_RT_BUILD_ORC=OFF
+    # -DCOMPILER_RT_BUILD_XRAY=OFF
+    # Enable the two lines below so that compiler-rt miscs would build
+    -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON
+    -DCOMPILER_RT_USE_LLVM_UNWINDER=ON
+    -DCOMPILER_RT_INSTALL_PATH="/llvmtools/lib/clang/20"
+    # # Bootstrap libunwind detects whether clang++ builds. A few libraries are missing, 
+    # # so the build always fail. According to `libunwind/src/CMakeLists.txt`:
+    # #   message(FATAL_ERROR
+    # #           "Compiler doesn't support generation of unwind tables if exception "
+    # #           "support is disabled.  Building libunwind DSO with runtime dependency "
+    # #           "on C++ ABI library is not supported.")
+    # # cmake would report a error saying that the compiler does not support rtti even
+    # # though `LLVM_ENABLE_RTTI=ON`, so break the condition
+    # -DCXX_SUPPORTS_FNO_EXCEPTIONS_FLAG=1
+    ## libc++abi library
+    # link libc++abi.so to libunwind statically, or libc++abi.so depends on libunwind.so
+    -DLIBCXXABI_ENABLE_STATIC_UNWINDER=ON
+    -DLIBCXXABI_USE_COMPILER_RT=ON
+    -DLIBCXXABI_USE_LLVM_UNWINDER=ON
+    ## libc++ library
+    -DLIBCXX_CXX_ABI=libcxxabi
+    # link libc++.so to libc++abi statically, or libc++.so depends on libc++abi.so
+    -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON
+    -DLIBCXX_USE_COMPILER_RT=ON
+    # musl must enable this!
+    -DLIBCXX_HAS_MUSL_LIBC=ON
+    ## runtimes to build
+    -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind;compiler-rt"
+)
+
+cmake \
+    -G Ninja -S ../runtimes \
+    "${cmake_args[@]}"
+
+ninja && ninja install/strip
+```
