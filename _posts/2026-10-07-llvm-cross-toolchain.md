@@ -282,10 +282,14 @@ local cmake_args=(
     # musl hides `stat64` under `_LARGEFILE64_SOURCE`
     -DCMAKE_C_FLAGS="-D_LARGEFILE64_SOURCE"
     -DCMAKE_CXX_FLAGS="-D_LARGEFILE64_SOURCE"
-    # gwp_asan need a backtrace library, to be exactly libexecinfo
-    -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
     # At the bootstrap stage we need to turn them off
+    -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF
+    -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
+    -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
+    -DCOMPILER_RT_BUILD_MEMPROF=OFF
     -DCOMPILER_RT_BUILD_ORC=OFF
+    -DCOMPILER_RT_BUILD_PROFILE=OFF
+    -DCOMPILER_RT_BUILD_SANITIZERS=OFF
     -DCOMPILER_RT_BUILD_XRAY=OFF
     # Enable the two lines below so that compiler-rt miscs would build
     -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON
@@ -380,7 +384,12 @@ local cmake_args=(
     # gwp_asan need a backtrace library, to be exactly libexecinfo
     -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
     # # At the bootstrap stage we need to turn them off
+    # -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF
+    # -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
+    # -DCOMPILER_RT_BUILD_MEMPROF=OFF
     # -DCOMPILER_RT_BUILD_ORC=OFF
+    # -DCOMPILER_RT_BUILD_PROFILE=OFF
+    # -DCOMPILER_RT_BUILD_SANITIZERS=OFF
     # -DCOMPILER_RT_BUILD_XRAY=OFF
     # Enable the two lines below so that compiler-rt miscs would build
     -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON
