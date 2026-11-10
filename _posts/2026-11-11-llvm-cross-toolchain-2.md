@@ -18,35 +18,47 @@ sudo pacman -S clang llvm lld
 
 # 参考 https://github.com/xiaoyue2532/CMLFS/tree/main/2-Stage1
 # 本工具链的很多思路都来自 CMLFS 和我对其进一步完善的 Fork
-# LLVM_TARGETS_TO_BUILD 选中所需的目标 省得构建不需要的目标而构建速度太久
-# LLVM_INSTALL_TOOLCHAIN_ONLY 减小安装大小 不用安装LLVM开发的库
+local cmake_args=(
+    -DCMAKE_BUILD_TYPE=Release 
+    -DCMAKE_INSTALL_PREFIX=/llvmtools
+    -DCMAKE_C_COMPILER=clang
+    -DCMAKE_CXX_COMPILER=clang++
+    # Specify llvm binutils with absolute path
+    -DCMAKE_AR="/usr/bin/llvm-ar"
+    -DCMAKE_NM="/usr/bin/llvm-nm"
+    -DCMAKE_RANLIB="/usr/bin/llvm-ranlib"
+    # Clang specific configurations
+    -DCLANG_DEFAULT_CXX_STDLIB=libc++
+    -DCLANG_DEFAULT_LINKER=lld
+    -DCLANG_DEFAULT_OBJCOPY=llvm-objcopy
+    -DCLANG_DEFAULT_RTLIB=compiler-rt
+    -DCLANG_DEFAULT_UNWINDLIB=libunwind
+    -DENABLE_LINKER_BUILD_ID=ON
+    # llvm specific configurations
+    -DLLVM_ENABLE_PROJECTS="clang;lld"
+    -DLLVM_ENABLE_RTTI=ON
+    -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-pc-linux-gnu"
+    -DLLVM_HOST_TRIPLE="x86_64-pc-linux-gnu"
+    # Reduce compile workload
+    -DLLVM_INCLUDE_BENCHMARKS=OFF
+    -DLLVM_INCLUDE_EXAMPLES=OFF
+    -DLLVM_INCLUDE_TESTS=OFF
+    # Build and link to libLLVM.so
+    -DLLVM_BUILD_LLVM_DYLIB=ON
+    -DLLVM_LINK_LLVM_DYLIB=ON
+    # 减小安装大小 不用安装LLVM开发的库
+    -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON
+    # Use in-place lld to build LLVM
+    -DLLVM_ENABLE_LLD=ON
+    # Disable unnecessary dependencies
+    -DLLVM_ENABLE_LIBEDIT=OFF
+    -DLLVM_ENABLE_LIBXML2=OFF
+    ## 选中所需的目标 省得构建不需要的目标而构建速度太久
+    # -DLLVM_TARGETS_TO_BUILD="AArch64;ARM;X86;BPF;WebAssembly;RISCV;NVPTX"
+)
 cmake \
-    -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release  \
-    -DCMAKE_INSTALL_PREFIX=/llvmtools \
-    -DCMAKE_C_COMPILER=clang \
-    -DCMAKE_CXX_COMPILER=clang++ \
-    -DCMAKE_AR="/usr/bin/llvm-ar" \
-    -DCMAKE_NM="/usr/bin/llvm-nm" \
-    -DCMAKE_RANLIB="/usr/bin/llvm-ranlib" \
-    -DCLANG_DEFAULT_CXX_STDLIB=libc++ \
-    -DCLANG_DEFAULT_LINKER=lld \
-    -DCLANG_DEFAULT_OBJCOPY=llvm-objcopy \
-    -DCLANG_DEFAULT_RTLIB=compiler-rt \
-    -DCLANG_DEFAULT_UNWINDLIB=libunwind \
-    -DENABLE_LINKER_BUILD_ID=ON \
-    -DLLVM_BUILD_LLVM_DYLIB=ON \
-    -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-pc-linux-gnu" \
-    -DLLVM_ENABLE_PROJECTS="clang;lld" \
-    -DLLVM_ENABLE_RTTI=ON \
-    -DLLVM_HOST_TRIPLE="x86_64-pc-linux-gnu" \
-    -DLLVM_INCLUDE_BENCHMARKS=OFF \
-    -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
-    -DLLVM_LINK_LLVM_DYLIB=ON \
-    -DLLVM_ENABLE_LLD=ON \
-    -DLLVM_ENABLE_LIBEDIT=OFF \
-    -DLLVM_ENABLE_LIBXML2=OFF \
-    ../llvm
+    -G Ninja -S ../llvm \
+    "${cmake_args[@]}"
 
 # 编译并安装到 /llvmtools
 ninja && ninja install/strip
@@ -92,13 +104,14 @@ mkdir /llvmtools/arm-unknown-linux-musleabihf
 
 ## 创建配置文件
 
-我的 arm 目标平台是 RK3506。这是一个 cortex-a7 核心的 armv7 架构处理器。
-若不指定 `-march`，默认是面向古早的 arm 架构。若面向 armv7n开发时不确定 `-mtune` 取值，可以选择 `-mtune=generic-armv7-a`。
+若 `-march` 未指定，默认目标是古早的 `armv6kz` 架构。
+我的 ARM 目标平台是 RK3506，这是一个 Cortex-A7 核心的 armv7 架构处理器，可以选择 `-mtune=cortex-a7`。
+若不确定 `-mtune` 取值，可以不指定或显式指定 `-mtune=generic`。
 
 ```shell
 cat > /llvmtools/bin/arm-unknown-linux-musleabihf.cfg << EOF
--march=armv7-a -mtune=cortex-a7
---sysroot=/llvmtools/arm-unknown-linux-musleabihf
+-march=armv7-a -mtune=generic
+--sysroot=<CFGDIR>/../arm-unknown-linux-musleabihf
 EOF
 ```
 
@@ -106,7 +119,8 @@ EOF
 
 ```shell
 # make headers_install 需要 rsync
-make ARCH=arm \
+make \
+    ARCH=arm \
     INSTALL_HDR_PATH=/llvmtools/arm-unknown-linux-musleabihf \
     headers_install
 ```
@@ -129,29 +143,42 @@ make DESTDIR=/llvmtools/arm-unknown-linux-musleabihf install-headers
 ## 编译 compiler-rt
 
 ```shell
-# 仅编译 CRT 和 Builtins
+local cmake_args=(
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_INSTALL_PREFIX=/llvmtools/lib/clang/20/
+    # Specify llvm binutils with absolute path
+    -DCMAKE_AR="/llvmtools/bin/llvm-ar"
+    -DCMAKE_NM="/llvmtools/bin/llvm-nm"
+    -DCMAKE_RANLIB="/llvmtools/bin/llvm-ranlib"
+    # Specify compilers
+    -DCMAKE_ASM_COMPILER=clang
+    -DCMAKE_C_COMPILER=clang
+    -DCMAKE_CXX_COMPILER=clang++
+    # Don't check whether the compilers work
+    -DCMAKE_C_COMPILER_WORKS=1
+    -DCMAKE_CXX_COMPILER_WORKS=1
+    # Specify compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY works
+    # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work,
+    # compiler-rt would not build CRT or builtin library.
+    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCMAKE_CXX_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
+    # At the bootstrap stage we need to turn them off
+    -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF
+    -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
+    -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
+    -DCOMPILER_RT_BUILD_MEMPROF=OFF
+    -DCOMPILER_RT_BUILD_ORC=OFF
+    -DCOMPILER_RT_BUILD_PROFILE=OFF
+    -DCOMPILER_RT_BUILD_SANITIZERS=OFF
+    -DCOMPILER_RT_BUILD_XRAY=OFF
+)
+
+# 仅编译 Builtins
 cmake \
-    -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/llvmtools/lib/clang/20/ \
-    -DCMAKE_ASM_COMPILER=clang \
-    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf \
-    -DCMAKE_C_COMPILER=clang \
-    -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf \
-    -DCMAKE_C_COMPILER_WORKS=1 \
-    -DCMAKE_CXX_COMPILER=clang++ \
-    -DCMAKE_CXX_COMPILER_TARGET=arm-unknown-linux-musleabihf \
-    -DCMAKE_CXX_COMPILER_WORKS=1 \
-    -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
-    -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF \
-    -DCOMPILER_RT_BUILD_GWP_ASAN=OFF \
-    -DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
-    -DCOMPILER_RT_BUILD_MEMPROF=OFF \
-    -DCOMPILER_RT_BUILD_ORC=OFF \
-    -DCOMPILER_RT_BUILD_PROFILE=OFF \
-    -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
-    -DCOMPILER_RT_BUILD_XRAY=OFF \
-    ../compiler-rt
+    -G Ninja -S ../compiler-rt \
+    "${cmake_args[@]}"
 
 ninja && ninja install/strip
 ```
@@ -256,10 +283,10 @@ local cmake_args=(
     -DCOMPILER_RT_INSTALL_PATH="/llvmtools/lib/clang/20"
     # Bootstrap libunwind detects whether clang++ builds. A few libraries are missing, 
     # so the build always fail. According to `libunwind/src/CMakeLists.txt`:
-    #   message(FATAL_ERROR
-    #           "Compiler doesn't support generation of unwind tables if exception "
-    #           "support is disabled.  Building libunwind DSO with runtime dependency "
-    #           "on C++ ABI library is not supported.")
+    # message(FATAL_ERROR
+    #         "Compiler doesn't support generation of unwind tables if exception "
+    #         "support is disabled.  Building libunwind DSO with runtime dependency "
+    #         "on C++ ABI library is not supported.")
     # cmake would report a error saying that the compiler does not support rtti even
     # though `LLVM_ENABLE_RTTI=ON`, so break the condition
     -DCXX_SUPPORTS_FNO_EXCEPTIONS_FLAG=1
