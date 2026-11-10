@@ -50,11 +50,15 @@ local cmake_args=(
     -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON
     # Use in-place lld to build LLVM
     -DLLVM_ENABLE_LLD=ON
+    ## Or you can use other linker, for example `mold`, to speed up build
+    # -DLLVM_USE_LINKER=mold
     # Disable unnecessary dependencies
     -DLLVM_ENABLE_LIBEDIT=OFF
     -DLLVM_ENABLE_LIBXML2=OFF
     ## 选中所需的目标 省得构建不需要的目标而构建速度太久
     # -DLLVM_TARGETS_TO_BUILD="AArch64;ARM;X86;BPF;WebAssembly;RISCV;NVPTX"
+    ## No append git repo and commit hash (when you build from a git repository)
+    # -DLLVM_APPEND_VC_REV=OFF
 )
 cmake \
     -G Ninja -S ../llvm \
