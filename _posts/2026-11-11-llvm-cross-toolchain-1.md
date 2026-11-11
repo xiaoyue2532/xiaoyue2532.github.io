@@ -49,6 +49,12 @@ LLVM 是一套天生的交叉编译器。
 |  arm-unknown-linux-musleabi  |  /lib/ld-musl-arm.so.1  |  libclang_rt.builtins-arm.a  |
 | arm-unknown-linux-musleabihf | /lib/ld-musl-armhf.so.1 | libclang_rt.builtins-armhf.a |
 
+### ARM Baremetal
+
+|       元组名称        |      compiler-rt 名称      |
+| :-------------------: | :------------------------: |
+| arm-unknown-none-eabi | libclang_rt.builtins-arm.a |
+
 ### RISCV64
 
 `riscv64-unknown-linux-musl` 默认 `-mabi=lp64d`。本文自定义了 `vendor` 为 `lp64`、`lp64f`、`lp64d` 的 RISCV64 目标。
