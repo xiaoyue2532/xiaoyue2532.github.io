@@ -159,7 +159,8 @@ local cmake_args=(
     -DCMAKE_NM="/llvmtools/bin/llvm-nm"
     -DCMAKE_RANLIB="/llvmtools/bin/llvm-ranlib"
     # Specify the ASM compiler
-    -DCMAKE_ASM_COMPILER=arm-unknown-none-eabi-as
+    -DCMAKE_ASM_COMPILER=clang
+    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf
     # Specify the C compiler and don't check whether it works
     -DCMAKE_C_COMPILER=clang
     -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf
@@ -261,7 +262,8 @@ local cmake_args=(
     -DCMAKE_NM="/llvmtools/bin/llvm-nm"
     -DCMAKE_RANLIB="/llvmtools/bin/llvm-ranlib"
     # Specify the ASM compiler
-    -DCMAKE_ASM_COMPILER=arm-unknown-none-eabi-as
+    -DCMAKE_ASM_COMPILER=clang
+    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf
     # Specify the C compiler and don't check whether it works
     -DCMAKE_C_COMPILER=clang
     -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf
@@ -366,7 +368,8 @@ local cmake_args=(
     -DCMAKE_NM="/llvmtools/bin/llvm-nm"
     -DCMAKE_RANLIB="/llvmtools/bin/llvm-ranlib"
     # Specify the ASM compiler
-    -DCMAKE_ASM_COMPILER=arm-unknown-none-eabi-as
+    -DCMAKE_ASM_COMPILER=clang
+    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf
     # Specify the C compiler
     -DCMAKE_C_COMPILER=clang
     -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf
