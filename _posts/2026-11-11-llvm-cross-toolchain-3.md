@@ -27,16 +27,22 @@ mkdir /llvmtools/arm-unknown-none-eabi
 local cmake_args=(
     -DCMAKE_INSTALL_PREFIX="/llvmtools/lib/clang/22/"
     -DCMAKE_BUILD_TYPE=Release
+    # Specify the ASM compiler
     -DCMAKE_ASM_COMPILER=arm-unknown-none-eabi-as
+    # Specify the C compiler and don't check whether it works
     -DCMAKE_C_COMPILER=clang
     -DCMAKE_C_COMPILER_TARGET=arm-unknown-none-eabi
     -DCMAKE_C_COMPILER_WORKS=1
+    # Specify the CXX compiler and don't check whether it works
     -DCMAKE_CXX_COMPILER=clang++
     -DCMAKE_CXX_COMPILER_TARGET=arm-unknown-none-eabi
     -DCMAKE_CXX_COMPILER_WORKS=1
+    # Specify llvm binutils with absolute path
     -DCMAKE_AR="/llvmtools/bin/llvm-ar"
     -DCMAKE_NM="/llvmtools/bin/llvm-nm"
     -DCMAKE_RANLIB="/llvmtools/bin/llvm-ranlib"
+    # Specify C and CXX compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY can work
+    # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work, compiler-rt would only install several header files.
     -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
     # Build builtins only (crt included)
     -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF
