@@ -5,8 +5,6 @@ categories: [ LLVM ]
 ---
 
 ```shell
-## Refer to [Better firmware with LLVM/Clang](https://interrupt.memfault.com/blog/arm-cortexm-with-llvm-clang)
-
 ## Sorry i messed up assembler:
 cat > /llvmtools/bin/arm-unknown-none-eabi-as << EOF
 #!/usr/bin/env bash
@@ -260,11 +258,18 @@ cmake \
     -G Ninja \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_COMPILER=arm-unknown-none-eabi-clang \
-    -DCMAKE_C_COMPILER_WORKS=1 \
-    -DCMAKE_CXX_COMPILER=arm-unknown-none-eabi-clang++ \
-    -DCMAKE_CXX_COMPILER_WORKS=1 \
+    -DCMAKE_ASM_COMPILER="/home/arch/llvmtools/bin/clang" \
+    -DCMAKE_ASM_COMPILER_TARGET=armv7m-unknown-none-eabi \
+    -DCMAKE_C_COMPILER="/home/arch/llvmtools/bin/clang" \
+    -DCMAKE_C_COMPILER_TARGET=armv7m-unknown-none-eabi \
+    -DCMAKE_CXX_COMPILER="/home/arch/llvmtools/bin/clang++" \
+    -DCMAKE_CXX_COMPILER_TARGET=armv7m-unknown-none-eabi \
+    -DCMAKE_AR="/home/arch/llvmtools/bin/llvm-ar" \
+    -DCMAKE_NM="/home/arch/llvmtools/bin/llvm-nm" \
+    -DCMAKE_RANLIB="/home/arch/llvmtools/bin/llvm-ranlib" \
+    -DCMAKE_SYSROOT="/home/arch/llvmtools/lib/clang-runtimes/arm-unknown-none-eabi/thumb/v7-m/soft" \
     -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+    -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
     -DCOMPILER_RT_BAREMETAL_BUILD=ON \
     -DLIBCXX_CXX_ABI=none \
     -DLIBCXX_ENABLE_EXCEPTIONS=OFF \
@@ -277,9 +282,10 @@ cmake \
     -DLIBCXX_ENABLE_THREADS=OFF \
     -DLIBCXX_ENABLE_UNICODE=OFF \
     -DLIBCXX_ENABLE_WIDE_CHARACTERS=OFF \
+    -DLIBCXX_HAS_TERMINAL_AVAILABLE=OFF \
     -DLIBCXX_USE_COMPILER_RT=ON \
     -DLIBC_ENABLE_USE_BY_CLANG=ON \
-    -DLIBC_TARGET_TRIPLE="arm-unknown-none-eabi" \
+    -DLIBC_TARGET_TRIPLE="armv7m-unknown-none-eabi" \
     -DLLVM_ENABLE_ASSERTIONS=OFF \
     -DLLVM_ENABLE_RUNTIMES="compiler-rt;libcxx;libc" \
     -DLLVM_LIBC_FULL_BUILD=ON \
@@ -288,25 +294,45 @@ cmake \
 ## According to https://llvm.org/devmtg/2020-09/slides/Qadeer-LLVM_in_a_Bare_Metal_Environment.pdf
 # which has libunwind
 -DLIBUNWIND_ENABLE_SHARED=OFF
--DLIBUNWIND_IS_BAREMETAL=ON
 -DLIBUNWIND_ENABLE_THREADS=OFF
+-DLIBUNWIND_IS_BAREMETAL=ON
 -DLIBUNWIND_USE_COMPILER_RT=ON
 # which has libc++abi
 -DLIBCXXABI_BAREMETAL=ON
--DLIBCXXABI_ENABLE_THREADS=OFF
--DLIBCXXABI_ENABLE_SHARED=OFF
--DLIBCXXABI_USE_COMPILER_RT=ON
 -DLIBCXXABI_ENABLE_EXCEPTIONS=ON
+-DLIBCXXABI_ENABLE_SHARED=OFF
+-DLIBCXXABI_ENABLE_THREADS=OFF
+-DLIBCXXABI_USE_COMPILER_RT=ON
 -DLIBCXXABI_USE_LLVM_UNWINDER=ON
 # libc++
--DLIBCXX_ENABLE_SHARED=OFF
 -DLIBCXX_BAREMETAL=ON
--DLIBCXX_USE_COMPILER_RT=ON
--DLIBCXX_ENABLE_EXCEPTIONS=ON
--DLIBCXX_ENABLE_THREADS=OFF
--DLIBCXX_ENABLE_MONOTONIC_CLOCK=OFF
 -DLIBCXX_CXX_ABI=libcxxabi
+-DLIBCXX_ENABLE_EXCEPTIONS=ON
 -DLIBCXX_ENABLE_FILESYSTEM=OFF
+-DLIBCXX_ENABLE_MONOTONIC_CLOCK=OFF
+-DLIBCXX_ENABLE_SHARED=OFF
+-DLIBCXX_ENABLE_THREADS=OFF
+-DLIBCXX_USE_COMPILER_RT=ON
+```
+
+## stub
+
+LLVM-Libc 不提供 crt0.o. 不相干但值得注意的是，符号 `__libc_init_array` 由 `libc.a` 提供.
+
+```shell
+touch /llvmtools/lib/clang-runtimes/arm-unknown-none-eabi/thumb/v7-m/soft/lib/crt0.o
+```
+
+clang baremetal 将 crt0.o 作为 Gcc 安装的标准。
+
+只有检测到 Gcc 安装，才会链接 crtbegin.o / crtend.o (-rtlib=libgcc) 
+或 clang_rt.crtbegin.o / clang_rt.crtend.o (-rtlib=compiler-rt).
+
+一旦检测到 Gcc 安装，就会链接 libgloss。
+
+```shell
+touch /llvmtools/arm-unknown-none-eabi/lib/crt0.o
+touch /llvmtools/lib/clang-runtimes/arm-unknown-none-eabi/thumb/v7-m/soft/lib/libgloss.a
 ```
 
 ## Refereces
