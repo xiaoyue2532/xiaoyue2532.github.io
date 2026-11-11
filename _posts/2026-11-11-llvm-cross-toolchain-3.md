@@ -251,10 +251,11 @@ tree /llvmtools/arm-unknown-none-eabi
 └── usr -> .
 ```
 
-## 尚未复现的
+## 已经复现的
+
+Last known good:
 
 ```shell
-## According to https://llvm.org/devmtg/2024-10/slides/techtalk/Hosek-ModernEmbeddedDevelopment-with-LLVM.pdf
 cmake \
     -G Ninja \
     -DCMAKE_INSTALL_PREFIX=/usr \
@@ -291,29 +292,54 @@ cmake \
     -DLLVM_ENABLE_RUNTIMES="compiler-rt;libcxx;libc" \
     -DLLVM_LIBC_FULL_BUILD=ON \
     ../runtimes
+```
 
-## According to https://llvm.org/devmtg/2020-09/slides/Qadeer-LLVM_in_a_Bare_Metal_Environment.pdf
-# which has libunwind
--DLIBUNWIND_ENABLE_SHARED=OFF
--DLIBUNWIND_ENABLE_THREADS=OFF
--DLIBUNWIND_IS_BAREMETAL=ON
--DLIBUNWIND_USE_COMPILER_RT=ON
-# which has libc++abi
--DLIBCXXABI_BAREMETAL=ON
--DLIBCXXABI_ENABLE_EXCEPTIONS=ON
--DLIBCXXABI_ENABLE_SHARED=OFF
--DLIBCXXABI_ENABLE_THREADS=OFF
--DLIBCXXABI_USE_COMPILER_RT=ON
--DLIBCXXABI_USE_LLVM_UNWINDER=ON
-# libc++
--DLIBCXX_BAREMETAL=ON
--DLIBCXX_CXX_ABI=libcxxabi
--DLIBCXX_ENABLE_EXCEPTIONS=ON
--DLIBCXX_ENABLE_FILESYSTEM=OFF
--DLIBCXX_ENABLE_MONOTONIC_CLOCK=OFF
--DLIBCXX_ENABLE_SHARED=OFF
--DLIBCXX_ENABLE_THREADS=OFF
--DLIBCXX_USE_COMPILER_RT=ON
+Last known good:
+
+```shell
+cmake \
+    -G Ninja \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_ASM_COMPILER="/home/arch/llvmtools/bin/clang" \
+    -DCMAKE_ASM_COMPILER_TARGET=armv7m-unknown-none-eabi \
+    -DCMAKE_C_COMPILER="/home/arch/llvmtools/bin/clang" \
+    -DCMAKE_C_COMPILER_TARGET=armv7m-unknown-none-eabi \
+    -DCMAKE_CXX_COMPILER="/home/arch/llvmtools/bin/clang++" \
+    -DCMAKE_CXX_COMPILER_TARGET=armv7m-unknown-none-eabi \
+    -DCMAKE_AR="/home/arch/llvmtools/bin/llvm-ar" \
+    -DCMAKE_NM="/home/arch/llvmtools/bin/llvm-nm" \
+    -DCMAKE_RANLIB="/home/arch/llvmtools/bin/llvm-ranlib" \
+    -DCMAKE_SYSROOT="/home/arch/llvmtools/lib/clang-runtimes/arm-unknown-none-eabi/thumb/v7-m/soft" \
+    -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+    -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
+    -DCOMPILER_RT_BAREMETAL_BUILD=ON \
+    -DLIBCXXABI_BAREMETAL=ON \
+    -DLIBCXXABI_ENABLE_ASSERTIONS=OFF \
+    -DLIBCXXABI_ENABLE_SHARED=OFF \
+    -DLIBCXXABI_ENABLE_THREADS=OFF \
+    -DLIBCXXABI_USE_COMPILER_RT=ON \
+    -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+    -DLIBCXX_CXX_ABI=libcxxabi \
+    -DLIBCXX_ENABLE_FILESYSTEM=OFF \
+    -DLIBCXX_ENABLE_LOCALIZATION=OFF \
+    -DLIBCXX_ENABLE_MONOTONIC_CLOCK=OFF \
+    -DLIBCXX_ENABLE_RANDOM_DEVICE=OFF \
+    -DLIBCXX_ENABLE_SHARED=OFF \
+    -DLIBCXX_ENABLE_THREADS=OFF \
+    -DLIBCXX_ENABLE_UNICODE=OFF \
+    -DLIBCXX_ENABLE_WIDE_CHARACTERS=OFF \
+    -DLIBCXX_HAS_TERMINAL_AVAILABLE=OFF \
+    -DLIBCXX_USE_COMPILER_RT=ON \
+    -DLIBUNWIND_ENABLE_ASSERTIONS=OFF \
+    -DLIBUNWIND_ENABLE_SHARED=OFF \
+    -DLIBUNWIND_ENABLE_THREADS=OFF \
+    -DLIBUNWIND_IS_BAREMETAL=ON \
+    -DLIBUNWIND_USE_COMPILER_RT=ON \
+    -DLIBC_TARGET_TRIPLE="armv7m-unknown-none-eabi" \
+    -DLLVM_LIBC_FULL_BUILD=ON \
+    -DLLVM_ENABLE_RUNTIMES="compiler-rt;libcxx;libcxxabi;libunwind;libc" \
+    ../runtimes
 ```
 
 ## stub
