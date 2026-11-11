@@ -180,11 +180,11 @@ local cmake_args=(
     -DCOMPILER_RT_BUILD_PROFILE=OFF
     -DCOMPILER_RT_BUILD_SANITIZERS=OFF
     -DCOMPILER_RT_BUILD_XRAY=OFF
-    # If not specified, it will install to :
+    # If not specified, compiler-rt will install to:
     # /llvmtools/lib/clang/22/lib/linux/libclang_rt.builtins-armhf.a
     # Or install to:
     # /llvmtools/lib/clang/22/lib/arm-unknown-linux-musleabihf/libclang_rt.builtins.a
-    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
+    # -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
 )
 
 cmake \
@@ -314,6 +314,11 @@ local cmake_args=(
     -DLIBCXX_HAS_MUSL_LIBC=ON
     ## runtimes to build
     -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind;compiler-rt"
+    # If not specified, compiler-rt will install to:
+    # /llvmtools/lib/clang/22/lib/linux/libclang_rt.builtins-armhf.a
+    # Or install to:
+    # /llvmtools/lib/clang/22/lib/arm-unknown-linux-musleabihf/libclang_rt.builtins.a
+    # -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
 )
 
 cmake \
@@ -396,6 +401,11 @@ local cmake_args=(
     -DLIBCXX_HAS_MUSL_LIBC=ON
     ## runtimes to build
     -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind;compiler-rt"
+    # If not specified, compiler-rt will install to:
+    # /llvmtools/lib/clang/22/lib/linux/libclang_rt.builtins-armhf.a
+    # Or install to:
+    # /llvmtools/lib/clang/22/lib/arm-unknown-linux-musleabihf/libclang_rt.builtins.a
+    # -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
 )
 
 cmake \
