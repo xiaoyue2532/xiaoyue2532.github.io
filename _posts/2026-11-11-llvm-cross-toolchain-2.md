@@ -60,6 +60,7 @@ local cmake_args=(
     ## No append git repo and commit hash (when you build from a git repository)
     # -DLLVM_APPEND_VC_REV=OFF
 )
+
 cmake \
     -G Ninja -S ../llvm \
     "${cmake_args[@]}"
@@ -71,9 +72,12 @@ ninja && ninja install/strip
 ## 建立工具链文件布局
 
 ```shell
-# 将汇编器 as 链接到 clang 而非 llvm-as
-# 前者是调用 clang 的集成汇编器 后者是 LLVM Bitcode 的编译器
-ln -sf clang-20 /llvmtools/bin/arm-unknown-linux-musleabihf-as
+# llvm-as 是 LLVM 字节码编译器, 同时 clang 不接受 <prefixed>-as argv[0], 必须写个 wrapper
+cat > /llvmtools/bin/arm-unknown-linux-musleabihf-as << EOF
+#!/usr/bin/env bash
+clang -x assembler-with-cpp --target=arm-unknown-linux-musleabihf $@
+EOF
+chmod +x arm-unknown-linux-musleabihf-as
 
 # 编译器
 ln -sf clang-20 /llvmtools/bin/arm-unknown-linux-musleabihf-cc
@@ -177,9 +181,13 @@ local cmake_args=(
     -DCOMPILER_RT_BUILD_PROFILE=OFF
     -DCOMPILER_RT_BUILD_SANITIZERS=OFF
     -DCOMPILER_RT_BUILD_XRAY=OFF
+    # If not specified, it will install to :
+    # /llvmtools/lib/clang/22/lib/linux/libclang_rt.builtins-armhf.a
+    # Or install to:
+    # /llvmtools/lib/clang/22/lib/arm-unknown-linux-musleabihf/libclang_rt.builtins.a
+    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
 )
 
-# 仅编译 Builtins
 cmake \
     -G Ninja -S ../compiler-rt \
     "${cmake_args[@]}"
@@ -343,6 +351,8 @@ ln -s . /llvmtools/arm-unknown-linux-musleabihf/usr
 ```
 
 ## Rebuild llvm-runtimes
+
+`riscv64-lp64f-linux-musl` 目标需要传入 `-DCOMPILER_RT_HWASAN_WITH_INTERCEPTORS=OFF`。
 
 ```shell
 local cmake_args=(
