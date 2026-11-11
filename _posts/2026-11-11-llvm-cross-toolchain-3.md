@@ -26,7 +26,8 @@ local cmake_args=(
     -DCMAKE_INSTALL_PREFIX="/llvmtools/lib/clang/22/"
     -DCMAKE_BUILD_TYPE=Release
     # Specify the ASM compiler
-    -DCMAKE_ASM_COMPILER=arm-unknown-none-eabi-as
+    -DCMAKE_ASM_COMPILER=clang
+    -DCMAKE_C_COMPILER_TARGET=arm-unknown-none-eabi
     # Specify the C compiler and don't check whether it works
     -DCMAKE_C_COMPILER=clang
     -DCMAKE_C_COMPILER_TARGET=arm-unknown-none-eabi
