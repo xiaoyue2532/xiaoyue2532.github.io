@@ -261,7 +261,7 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_ASM_COMPILER="/home/arch/llvmtools/bin/clang" \
-    -DCMAKE_ASM_COMPILER_TARGET=armv7m-unknown-none-eabi \
+    -DCMAKE_ASM_FLAGS="--target=armv7m-unknown-none-eabi" \
     -DCMAKE_C_COMPILER="/home/arch/llvmtools/bin/clang" \
     -DCMAKE_C_COMPILER_TARGET=armv7m-unknown-none-eabi \
     -DCMAKE_CXX_COMPILER="/home/arch/llvmtools/bin/clang++" \
@@ -297,12 +297,16 @@ cmake \
 Last known good:
 
 ```shell
+# It is unknown why CMAKE_ASM_COMPILER_TARGET is not used during `-mimplicit-it=always` test
+# Use CMAKE_ASM_FLAGS instead
+# -- Checking for assembler flag -mimplicit-it=always
+# -- Checking for assembler flag -mimplicit-it=always - Accepted
 cmake \
     -G Ninja \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_ASM_COMPILER="/home/arch/llvmtools/bin/clang" \
-    -DCMAKE_ASM_COMPILER_TARGET=armv7m-unknown-none-eabi \
+    -DCMAKE_ASM_FLAGS="--target=armv7m-unknown-none-eabi" \
     -DCMAKE_C_COMPILER="/home/arch/llvmtools/bin/clang" \
     -DCMAKE_C_COMPILER_TARGET=armv7m-unknown-none-eabi \
     -DCMAKE_CXX_COMPILER="/home/arch/llvmtools/bin/clang++" \
