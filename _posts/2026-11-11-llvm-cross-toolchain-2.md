@@ -158,19 +158,18 @@ local cmake_args=(
     -DCMAKE_AR="/llvmtools/bin/llvm-ar"
     -DCMAKE_NM="/llvmtools/bin/llvm-nm"
     -DCMAKE_RANLIB="/llvmtools/bin/llvm-ranlib"
-    # Specify compilers
-    -DCMAKE_ASM_COMPILER=clang
+    # Specify the ASM compiler
+    -DCMAKE_ASM_COMPILER=arm-unknown-none-eabi-as
+    # Specify the C compiler and don't check whether it works
     -DCMAKE_C_COMPILER=clang
-    -DCMAKE_CXX_COMPILER=clang++
-    # Don't check whether the compilers work
-    -DCMAKE_C_COMPILER_WORKS=1
-    -DCMAKE_CXX_COMPILER_WORKS=1
-    # Specify compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY works
-    # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work,
-    # compiler-rt would not build CRT or builtin library.
-    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf
     -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCMAKE_C_COMPILER_WORKS=1
+    # Specify the CXX compiler and don't check whether it works
+    -DCMAKE_CXX_COMPILER=clang++
     -DCMAKE_CXX_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCMAKE_CXX_COMPILER_WORKS=1
+    # Specify C and CXX compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY can work
+    # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work, compiler-rt would only install several header files.
     -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
     # At the bootstrap stage we need to turn them off
     -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF
@@ -261,19 +260,18 @@ local cmake_args=(
     -DCMAKE_AR="/llvmtools/bin/llvm-ar"
     -DCMAKE_NM="/llvmtools/bin/llvm-nm"
     -DCMAKE_RANLIB="/llvmtools/bin/llvm-ranlib"
-    # Specify compilers
-    -DCMAKE_ASM_COMPILER=clang
+    # Specify the ASM compiler
+    -DCMAKE_ASM_COMPILER=arm-unknown-none-eabi-as
+    # Specify the C compiler and don't check whether it works
     -DCMAKE_C_COMPILER=clang
-    -DCMAKE_CXX_COMPILER=clang++
-    # Don't check whether the compilers work
-    -DCMAKE_C_COMPILER_WORKS=1
-    -DCMAKE_CXX_COMPILER_WORKS=1
-    # Specify compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY works
-    # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work,
-    # compiler-rt would not build CRT or builtin library.
-    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf
     -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCMAKE_C_COMPILER_WORKS=1
+    # Specify the CXX compiler and don't check whether it works
+    -DCMAKE_CXX_COMPILER=clang++
     -DCMAKE_CXX_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    -DCMAKE_CXX_COMPILER_WORKS=1
+    # Specify C and CXX compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY can work
+    # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work, compiler-rt would only install several header files.
     -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
     # specify sysroot or clang would look for host's sysroot /usr
     -DCMAKE_SYSROOT=/llvmtools/arm-unknown-linux-musleabihf
@@ -362,16 +360,16 @@ local cmake_args=(
     -DCMAKE_AR="/llvmtools/bin/llvm-ar"
     -DCMAKE_NM="/llvmtools/bin/llvm-nm"
     -DCMAKE_RANLIB="/llvmtools/bin/llvm-ranlib"
-    # Specify compilers
-    -DCMAKE_ASM_COMPILER=clang
+    # Specify the ASM compiler
+    -DCMAKE_ASM_COMPILER=arm-unknown-none-eabi-as
+    # Specify the C compiler
     -DCMAKE_C_COMPILER=clang
-    -DCMAKE_CXX_COMPILER=clang++
-    # Specify compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY works
-    # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work,
-    # compiler-rt would not build CRT or builtin library.
-    -DCMAKE_ASM_COMPILER_TARGET=arm-unknown-linux-musleabihf
     -DCMAKE_C_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    # Specify the CXX compiler
+    -DCMAKE_CXX_COMPILER=clang++
     -DCMAKE_CXX_COMPILER_TARGET=arm-unknown-linux-musleabihf
+    # Specify C and CXX compiler targets so that COMPILER_RT_DEFAULT_TARGET_ONLY can work
+    # When COMPILER_RT_DEFAULT_TARGET_ONLY does not work, compiler-rt would only install several header files.
     -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
     # specify sysroot or clang would look for host's sysroot /usr
     -DCMAKE_SYSROOT=/llvmtools/arm-unknown-linux-musleabihf
